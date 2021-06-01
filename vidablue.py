@@ -2,7 +2,7 @@ from bearlibterminal import terminal
 from bresenham import bresenham
 from textwrap import wrap
 from tile import Tile
-from utils import DrawingMode, EditMode, print_terminal
+from utils import DrawingMode, EditMode, get_text_input, print_terminal
 
 class VidaBlue:
   def __init__(self):
@@ -34,6 +34,8 @@ class VidaBlue:
     self.colors = ["white", "gray", "red","flame","orange","amber","yellow","lime","chartreuse","green","sea","turquoise","cyan","sky","azure","blue","han","violet","purple","fuchsia","magenta","pink","crimson","transparent"]
     self.color_index = 0
 
+    self.paused_index = 0
+
   def update(self):
     running = True
 
@@ -45,6 +47,12 @@ class VidaBlue:
       running = self.interact_update()
     elif self.edit_mode == EditMode.color:
       running = self.color_update()
+    elif self.edit_mode == EditMode.paused:
+      running = self.paused_update()
+    elif self.edit_mode == EditMode.save:
+      running = self.save_update()
+    elif self.edit_mode == EditMode.load:
+      running = self.load_update()
 
     return running
 
@@ -56,7 +64,7 @@ class VidaBlue:
       if self.first_line_point_set:
         self.first_line_point_set = False
       else:
-        running = False
+        self.edit_mode = EditMode.paused
 
     elif key == terminal.TK_UP:
       if self.cursor_y - 1 >= 0:
@@ -70,17 +78,6 @@ class VidaBlue:
     elif key == terminal.TK_RIGHT:
       if self.cursor_x + 1 <= 31:
         self.cursor_x += 1
-    
-    # Change to call code to save to file in the pause menu
-    # This is placing the current tile, then saving the map
-    elif terminal.check(terminal.TK_CONTROL) and key == terminal.TK_S:
-      f = open('map_out.txt', 'w')
-      map_str = ""
-      for tile in self.tiles.values():
-        map_str += tile.ch
-      formatted_map_str = "\n".join(wrap(map_str, 32))
-      f.write(formatted_map_str)
-      f.close()
 
     elif key == terminal.TK_CONTROL:
       if self.draw_mode == DrawingMode.char:
@@ -141,7 +138,10 @@ class VidaBlue:
     key = terminal.read()
 
     if key == terminal.TK_ESCAPE:
-      running = False
+      if self.first_line_point_set:
+        self.first_line_point_set = False
+      else:
+        self.edit_mode = EditMode.paused
 
     elif key == terminal.TK_UP:
       if self.cursor_y - 1 >= 0:
@@ -200,7 +200,10 @@ class VidaBlue:
     key = terminal.read()
 
     if key == terminal.TK_ESCAPE:
-      running = False
+      if self.first_line_point_set:
+        self.first_line_point_set = False
+      else:
+        self.edit_mode = EditMode.paused
 
     elif key == terminal.TK_UP:
       if self.cursor_y - 1 >= 0:
@@ -274,6 +277,155 @@ class VidaBlue:
 
     return running
 
+  def paused_update(self):
+    running = True
+    key = terminal.read()
+
+    if key == terminal.TK_UP:
+      if self.paused_index == 0:
+        self.paused_index = 3
+      else:
+        self.paused_index -= 1
+    elif key == terminal.TK_DOWN:
+      if self.paused_index == 4:
+        self.paused_index = 0
+      else:
+        self.paused_index += 1
+
+    elif terminal.check(terminal.TK_CONTROL):
+      if self.paused_index == 0: # Return to map
+        self.edit_mode = EditMode.chars
+      elif self.paused_index == 1: # Save map
+        # Code to open window to input map name
+        import easygui
+  
+        # message to be displayed
+        message = "Please name file without whitespace"
+          
+        # window title
+        title = "Save map as..."
+          
+        # long text
+        text = [""]
+                  
+        # creating a multi password box
+        map_name = easygui.textbox(message, title, text)
+
+        # Save tile chars to file
+        f = open('out/%s.txt' % map_name, 'w+')
+        map_str = ""
+        for y in range(32):
+          for x in range(32):
+            map_str += self.tiles[(x, y)].ch
+        formatted_map_str = "\n".join(wrap(map_str, 32))
+        f.write(formatted_map_str)
+        f.close()
+
+        print(map_str)
+
+        # Save tile solidity to file
+        f = open('out/%s_solidity.txt' % map_name, 'w+')
+        map_str = ""
+        for y in range(32):
+          for x in range(32):
+            tile = self.tiles[(x, y)]
+            if tile.solid:
+              map_str += '1'
+            else:
+              map_str += '0'
+        formatted_map_str = "\n".join(wrap(map_str, 32))
+        f.write(formatted_map_str)
+        f.close()
+
+        # Save tile interactability to file
+        f = open('out/%s_interact.txt' % map_name, 'w+')
+        map_str = ""
+        for y in range(32):
+          for x in range(32):
+            tile = self.tiles[(x, y)]
+            if tile.interact:
+              map_str += '1'
+            else:
+              map_str += '0'
+        formatted_map_str = "\n".join(wrap(map_str, 32))
+        f.write(formatted_map_str)
+        f.close()
+      elif self.paused_index == 2: # Load map
+        import easygui
+
+        map_path = easygui.fileopenbox(title='map file')
+        solid_path = easygui.fileopenbox(title='map solidity file')
+        interact_path = easygui.fileopenbox(title='map interact file')
+
+        # Load tiles with chars from map_path
+        char_mapf = open(map_path, 'r').read()
+        
+        x, y = 0, 0
+        for line in char_mapf:
+          for char in line:
+            if char == '\n':
+              y += 1
+              x = 0
+            else:
+              tile = self.tiles[(x, y)]
+              tile.ch = char
+              self.tiles[(x, y)] = tile
+              x += 1
+
+        # Load tiles with solidity from solid_path
+        solid_mapf = open(solid_path, 'r').read()
+        
+        x, y = 0, 0
+        for line in solid_mapf:
+          for char in line:
+            if char == '\n':
+              y += 1
+              x = 0
+            else:
+              tile = self.tiles[(x, y)]
+              if char == '0':
+                tile.solid = False
+              else:
+                tile.solid = True
+              self.tiles[(x, y)] = tile
+              x += 1
+
+        # Load tiles with interact from interact_path
+        interact_mapf = open(interact_path, 'r').read()
+        
+        x, y = 0, 0
+        for line in interact_mapf:
+          for char in line:
+            if char == '\n':
+              y += 1
+              x = 0
+            else:
+              tile = self.tiles[(x, y)]
+              if char == '0':
+                tile.interact = False
+              else:
+                tile.interact = True
+              self.tiles[(x, y)] = tile
+              x += 1
+
+      elif self.paused_index == 3: # Quit
+        running = False
+
+    elif key == terminal.TK_SPACE:
+      pass
+
+    return running
+
+  def save_update(self):
+    running = True
+
+    return running
+
+  def load_update(self):
+    running = True
+
+    return running
+
   def draw(self):
     terminal.clear()
 
@@ -285,6 +437,12 @@ class VidaBlue:
       self.interact_draw()
     elif self.edit_mode == EditMode.color:
       self.color_draw()
+    elif self.edit_mode == EditMode.paused:
+      self.paused_draw()
+    elif self.edit_mode == EditMode.save:
+      self.save_draw()
+    elif self.edit_mode == EditMode.load:
+      self.load_draw()
 
     terminal.refresh()
 
@@ -377,3 +535,20 @@ class VidaBlue:
       else:
         print_terminal(0, y, c, 'white')
         y += 1
+
+  def paused_draw(self):
+    options = ['Return to map', 'Save map', 'Load map', 'Quit']
+
+    print_terminal(0, 0, 'PAUSED', 'white')
+
+    for y, option in enumerate(options):
+      if y == self.paused_index:
+        print_terminal(0, y + 1, option, 'blue')
+      else:
+        print_terminal(0, y + 1, option, 'white')
+
+  def save_draw(self):
+    pass
+
+  def load_draw(self):
+    pass

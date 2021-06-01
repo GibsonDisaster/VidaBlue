@@ -5,10 +5,12 @@ from tile import Tile
 from utils import DrawingMode, EditMode, get_property_desc, get_property_name, get_property_pos, print_terminal, create_properties_str, read_properties_file
 
 class VidaBlue:
-  def __init__(self):
+  def __init__(self, width=32, height=32):
     self.tiles = {}
-    for x in range(32):
-      for y in range(32):
+    self.width = width
+    self.height = height
+    for x in range(self.width):
+      for y in range(self.height):
         self.tiles[(x, y)] = Tile('.')
 
     self.draw_mode = DrawingMode.char
@@ -20,7 +22,7 @@ class VidaBlue:
     self.cursor_x = 0
     self.cursor_y = 0
 
-    self.info_x_start = 32
+    self.info_x_start = self.width
     self.info_y_start = 0
 
     self.line_start_x = 0
@@ -71,13 +73,13 @@ class VidaBlue:
       if self.cursor_y - 1 >= 0:
         self.cursor_y -= 1
     elif key == terminal.TK_DOWN:
-      if self.cursor_y + 1 <= 31:
+      if self.cursor_y + 1 <= self.height - 1:
         self.cursor_y += 1
     elif key == terminal.TK_LEFT:
       if self.cursor_x - 1 >= 0:
         self.cursor_x -= 1
     elif key == terminal.TK_RIGHT:
-      if self.cursor_x + 1 <= 31:
+      if self.cursor_x + 1 <= self.width - 1:
         self.cursor_x += 1
 
     elif key == terminal.TK_CONTROL:
@@ -148,13 +150,13 @@ class VidaBlue:
       if self.cursor_y - 1 >= 0:
         self.cursor_y -= 1
     elif key == terminal.TK_DOWN:
-      if self.cursor_y + 1 <= 31:
+      if self.cursor_y + 1 <= self.height - 1:
         self.cursor_y += 1
     elif key == terminal.TK_LEFT:
       if self.cursor_x - 1 >= 0:
         self.cursor_x -= 1
     elif key == terminal.TK_RIGHT:
-      if self.cursor_x + 1 <= 31:
+      if self.cursor_x + 1 <= self.width - 1:
         self.cursor_x += 1
 
     elif key == terminal.TK_CONTROL:
@@ -210,13 +212,13 @@ class VidaBlue:
       if self.cursor_y - 1 >= 0:
         self.cursor_y -= 1
     elif key == terminal.TK_DOWN:
-      if self.cursor_y + 1 <= 31:
+      if self.cursor_y + 1 <= self.height - 1:
         self.cursor_y += 1
     elif key == terminal.TK_LEFT:
       if self.cursor_x - 1 >= 0:
         self.cursor_x -= 1
     elif key == terminal.TK_RIGHT:
-      if self.cursor_x + 1 <= 31:
+      if self.cursor_x + 1 <= self.width - 1:
         self.cursor_x += 1
 
     elif key == terminal.TK_CONTROL:
@@ -316,10 +318,10 @@ class VidaBlue:
         # Save tile chars to file
         f = open('out/%s_map.txt' % map_name, 'w+')
         map_str = ""
-        for y in range(32):
-          for x in range(32):
+        for y in range(self.height):
+          for x in range(self.width):
             map_str += self.tiles[(x, y)].ch
-        formatted_map_str = "\n".join(wrap(map_str, 32))
+        formatted_map_str = "\n".join(wrap(map_str, self.width))
         f.write(formatted_map_str)
         f.close()
 
@@ -328,28 +330,28 @@ class VidaBlue:
         # Save tile solidity to file
         f = open('out/%s_solidity.txt' % map_name, 'w+')
         map_str = ""
-        for y in range(32):
-          for x in range(32):
+        for y in range(self.height):
+          for x in range(self.width):
             tile = self.tiles[(x, y)]
             if tile.solid:
               map_str += '1'
             else:
               map_str += '0'
-        formatted_map_str = "\n".join(wrap(map_str, 32))
+        formatted_map_str = "\n".join(wrap(map_str, self.width))
         f.write(formatted_map_str)
         f.close()
 
         # Save tile interactability to file
         f = open('out/%s_interact.txt' % map_name, 'w+')
         map_str = ""
-        for y in range(32):
-          for x in range(32):
+        for y in range(self.height):
+          for x in range(self.width):
             tile = self.tiles[(x, y)]
             if tile.interact:
               map_str += '1'
             else:
               map_str += '0'
-        formatted_map_str = "\n".join(wrap(map_str, 32))
+        formatted_map_str = "\n".join(wrap(map_str, self.width))
         f.write(formatted_map_str)
         f.close()
 
@@ -359,8 +361,8 @@ class VidaBlue:
         f.close()
 
         f = open('out/%s_properties.txt' % map_name, 'a')
-        for y in range(32):
-          for x in range(32):
+        for y in range(self.height):
+          for x in range(self.width):
             tile = self.tiles[(x, y)]
             if tile.has_properties:
               prop_str = create_properties_str(x, y, tile.name, tile.desc)
@@ -478,13 +480,13 @@ class VidaBlue:
       if self.cursor_y - 1 >= 0:
         self.cursor_y -= 1
     elif key == terminal.TK_DOWN:
-      if self.cursor_y + 1 <= 31:
+      if self.cursor_y + 1 <= self.height - 1:
         self.cursor_y += 1
     elif key == terminal.TK_LEFT:
       if self.cursor_x - 1 >= 0:
         self.cursor_x -= 1
     elif key == terminal.TK_RIGHT:
-      if self.cursor_x + 1 <= 31:
+      if self.cursor_x + 1 <= self.width - 1:
         self.cursor_x += 1
 
     elif key == terminal.TK_CONTROL:
@@ -632,7 +634,7 @@ class VidaBlue:
         print_terminal(0, y + 1, option, 'white')
 
     if self.should_paused_toast:
-      print_terminal(0, 31, self.paused_toast, 'yellow')
+      print_terminal(0, self.height - 1, self.paused_toast, 'yellow')
 
   def properties_draw(self):
     for ((posx, posy), t) in self.tiles.items():

@@ -1,2 +1,2 @@
-window: size=57x32;
+window: size=57x64;
 font: square.ttf, size = 12;

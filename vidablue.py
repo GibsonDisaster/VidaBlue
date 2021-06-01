@@ -49,10 +49,8 @@ class VidaBlue:
       running = self.color_update()
     elif self.edit_mode == EditMode.paused:
       running = self.paused_update()
-    elif self.edit_mode == EditMode.save:
-      running = self.save_update()
-    elif self.edit_mode == EditMode.load:
-      running = self.load_update()
+    elif self.edit_mode == EditMode.properties:
+      running = self.properties_update()
 
     return running
 
@@ -253,7 +251,7 @@ class VidaBlue:
         self.draw_mode = DrawingMode.char
 
     elif terminal.check(terminal.TK_TAB):
-      self.edit_mode = EditMode.chars
+      self.edit_mode = EditMode.properties
 
     return running
 
@@ -416,13 +414,47 @@ class VidaBlue:
 
     return running
 
-  def save_update(self):
+  def properties_update(self):
     running = True
+    key = terminal.read()
 
-    return running
+    if key == terminal.TK_ESCAPE:
+      self.edit_mode = EditMode.paused
 
-  def load_update(self):
-    running = True
+    elif key == terminal.TK_UP:
+      if self.cursor_y - 1 >= 0:
+        self.cursor_y -= 1
+    elif key == terminal.TK_DOWN:
+      if self.cursor_y + 1 <= 31:
+        self.cursor_y += 1
+    elif key == terminal.TK_LEFT:
+      if self.cursor_x - 1 >= 0:
+        self.cursor_x -= 1
+    elif key == terminal.TK_RIGHT:
+      if self.cursor_x + 1 <= 31:
+        self.cursor_x += 1
+
+    elif key == terminal.TK_CONTROL:
+      import easygui
+
+      tile = self.tiles[(self.cursor_x, self.cursor_y)]
+
+      if not tile.has_properties:
+        name_and_desc = easygui.textbox("Enter Name and then on next line enter the description", "Vida Blue", [])
+      else:
+        name_and_desc = easygui.textbox("Enter Name and then on next line enter the description", "Vida Blue", [tile.name, '\n', tile.desc])
+
+      if name_and_desc != None:
+        name, _, desc = name_and_desc.rpartition('\n')
+
+        tile.name = name
+        tile.desc = desc
+        tile.has_properties = True
+
+        self.tiles[(self.cursor_x, self.cursor_y)] = tile
+
+    elif terminal.check(terminal.TK_TAB):
+      self.edit_mode = EditMode.chars
 
     return running
 
@@ -439,10 +471,8 @@ class VidaBlue:
       self.color_draw()
     elif self.edit_mode == EditMode.paused:
       self.paused_draw()
-    elif self.edit_mode == EditMode.save:
-      self.save_draw()
-    elif self.edit_mode == EditMode.load:
-      self.load_draw()
+    elif self.edit_mode == EditMode.properties:
+      self.properties_draw()
 
     terminal.refresh()
 
@@ -467,11 +497,12 @@ class VidaBlue:
       draw_mode_char = '\\'
 
     # Draw info screen
-    print_terminal(self.info_x_start, self.info_y_start, 'ctrl: %s' % self.curr_char, 'white')
-    print_terminal(self.info_x_start, self.info_y_start + 1, 'hold: %s' % self.other_char, 'white')
-    print_terminal(self.info_x_start, self.info_y_start + 2, 'cursor: (%s, %s)' % (self.cursor_x, self.cursor_y), 'white')
-    print_terminal(self.info_x_start, self.info_y_start + 3, 'draw mode: [[%s]]' % (draw_mode_char), 'white')
-    print_terminal(self.info_x_start, self.info_y_start + 4, 'color: %s' % self.colors[self.color_index], self.colors[self.color_index])
+    print_terminal(self.info_x_start, self.info_y_start, '[[Drawing Mode]]', 'white')
+    print_terminal(self.info_x_start, self.info_y_start + 1, 'ctrl: %s' % self.curr_char, 'white')
+    print_terminal(self.info_x_start, self.info_y_start + 2, 'hold: %s' % self.other_char, 'white')
+    print_terminal(self.info_x_start, self.info_y_start + 3, 'cursor: (%s, %s)' % (self.cursor_x, self.cursor_y), 'white')
+    print_terminal(self.info_x_start, self.info_y_start + 4, 'draw mode: [[%s]]' % (draw_mode_char), 'white')
+    print_terminal(self.info_x_start, self.info_y_start + 5, 'color: %s' % self.colors[self.color_index], self.colors[self.color_index])
 
   def solidity_draw(self):
     for ((posx, posy), t) in self.tiles.items():
@@ -547,8 +578,21 @@ class VidaBlue:
       else:
         print_terminal(0, y + 1, option, 'white')
 
-  def save_draw(self):
-    pass
+  def properties_draw(self):
+    for ((posx, posy), t) in self.tiles.items():
+      if t.has_properties:
+        print_terminal(posx, posy, t.ch, 'red')
+      else:
+        print_terminal(posx, posy, t.ch, 'white')
 
-  def load_draw(self):
-    pass
+    current_tile_ch = self.tiles[(self.cursor_x, self.cursor_y)].ch
+    draw_color = 'red' if self.tiles[(self.cursor_x, self.cursor_y)].has_properties else 'white'
+    print_terminal(self.cursor_x, self.cursor_y, '%s[+]å' % current_tile_ch, draw_color)
+
+    current_tile = self.tiles[(self.cursor_x, self.cursor_y)]
+    print_terminal(self.info_x_start, self.info_y_start, '[[Properties Mode]]', 'white')
+    print_terminal(self.info_x_start, self.info_y_start + 1, 'Name: %s' % current_tile.name, 'white')
+    print_terminal(self.info_x_start, self.info_y_start + 2, 'Desc:', 'white')
+
+    for (offset, line) in enumerate(list(wrap(current_tile.desc, 25))):
+      print_terminal(self.info_x_start, self.info_y_start + offset + 3, line, 'white')

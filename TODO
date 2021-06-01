@@ -3,3 +3,7 @@ Ability to switch EditMode for Chars/Solidity/Interactable/Etc
 Screen for saving/loading maps
 
 why is the top left char always wrong?
+Add description editor for tiles
+Add naming editor for tiles (same place as above?, how to have two easy gui components in same call?)
+
+add toast to bottom of the paused screen for loading/saving message

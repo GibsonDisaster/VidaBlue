@@ -13,6 +13,7 @@ class EditMode(Enum):
   paused = 4
   save = 5
   load = 6
+  properties = 7
 
 def print_terminal(x, y, g, c):
   old_color = terminal.TK_COLOR
@@ -20,12 +21,16 @@ def print_terminal(x, y, g, c):
   terminal.printf(x, y, g)
   terminal.color(old_color)
 
-def get_text_input():
-  res = ''
+def create_properties_str(x, y, name, desc):
+  return '%s,%s,%s,%s' % (x, y, name, desc)
 
-  while not terminal.check(terminal.TK_ENTER):
-    if terminal.check(terminal.TK_WCHAR):
-      char_pressed = chr(terminal.state(terminal.TK_WCHAR))
-      res += char_pressed
+def read_properties_file(filepath):
+  result = []
+  with open(filepath, "r") as fp:
+      for i in fp.readlines():
+          tmp = i.split(",")
+          try:
+              result.append((int(tmp[0]), int(tmp[1]), str(tmp[2]), str(tmp[3])))
+          except:pass
 
-  print(res)
+  return result

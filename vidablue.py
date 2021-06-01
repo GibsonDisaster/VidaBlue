@@ -310,12 +310,11 @@ class VidaBlue:
           
         # long text
         text = [""]
-                  
-        # creating a multi password box
+
         map_name = easygui.textbox(message, title, text)
 
         # Save tile chars to file
-        f = open('out/%s.txt' % map_name, 'w+')
+        f = open('out/%s_map.txt' % map_name, 'w+')
         map_str = ""
         for y in range(32):
           for x in range(32):
@@ -375,10 +374,23 @@ class VidaBlue:
       elif self.paused_index == 2: # Load map
         import easygui
 
-        map_path = easygui.fileopenbox(title='map file')
-        solid_path = easygui.fileopenbox(title='map solidity file')
-        interact_path = easygui.fileopenbox(title='map interact file')
-        properties_path = easygui.fileopenbox(title='map properties file')
+        all_files = easygui.fileopenbox(title='Select all map files...', multiple=True)
+
+        # Change to allow no file to be given, replacing its data with a default file
+        map_path = ''
+        solid_path = ''
+        interact_path = ''
+        properties_path = ''
+
+        for file in all_files:
+          if '_map' in file:
+            map_path = file
+          elif '_solidity' in file:
+            solid_path = file
+          elif '_interact' in file:
+            interact_path = file
+          elif '_properties' in file:
+            properties_path = file
 
         # Load tiles with chars from map_path
         char_mapf = open(map_path, 'r').read()

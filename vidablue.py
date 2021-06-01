@@ -36,6 +36,9 @@ class VidaBlue:
 
     self.paused_index = 0
 
+    self.should_paused_toast = False
+    self.paused_toast = ''
+
   def update(self):
     running = True
 
@@ -293,6 +296,8 @@ class VidaBlue:
     elif terminal.check(terminal.TK_CONTROL):
       if self.paused_index == 0: # Return to map
         self.edit_mode = EditMode.chars
+        self.should_paused_toast = False
+        self.paused_toast = ''
       elif self.paused_index == 1: # Save map
         # Code to open window to input map name
         import easygui
@@ -364,6 +369,9 @@ class VidaBlue:
               f.write('\n')
 
         f.close()
+
+        self.should_paused_toast = True
+        self.paused_toast = "Saved map successfully"
       elif self.paused_index == 2: # Load map
         import easygui
 
@@ -435,6 +443,9 @@ class VidaBlue:
           tile.has_properties = True
 
           self.tiles[(x, y)] = tile
+
+        self.should_paused_toast = True
+        self.paused_toast = "Loaded map successfully"
 
       elif self.paused_index == 3: # Quit
         running = False
@@ -607,6 +618,9 @@ class VidaBlue:
         print_terminal(0, y + 1, option, 'blue')
       else:
         print_terminal(0, y + 1, option, 'white')
+
+    if self.should_paused_toast:
+      print_terminal(0, 31, self.paused_toast, 'yellow')
 
   def properties_draw(self):
     for ((posx, posy), t) in self.tiles.items():

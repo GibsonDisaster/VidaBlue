@@ -2,7 +2,7 @@ from bearlibterminal import terminal
 from bresenham import bresenham
 from textwrap import wrap
 from tile import Tile
-from utils import DrawingMode, print_terminal
+from utils import DrawingMode, EditMode, print_terminal
 
 class VidaBlue:
   def __init__(self):
@@ -12,6 +12,7 @@ class VidaBlue:
         self.tiles[(x, y)] = Tile('.')
 
     self.draw_mode = DrawingMode.char
+    self.edit_mode = EditMode.chars
 
     self.curr_char = 'x'
     self.other_char = '.'
@@ -30,7 +31,24 @@ class VidaBlue:
 
     self.first_line_point_set = False
 
+    self.colors = ["white", "gray", "red","flame","orange","amber","yellow","lime","chartreuse","green","sea","turquoise","cyan","sky","azure","blue","han","violet","purple","fuchsia","magenta","pink","crimson","transparent"]
+    self.color_index = 0
+
   def update(self):
+    running = True
+
+    if self.edit_mode == EditMode.chars:
+      running = self.chars_update()
+    elif self.edit_mode == EditMode.solidity:
+      running = self.solidity_update()
+    elif self.edit_mode == EditMode.interactable:
+      running = self.interact_update()
+    elif self.edit_mode == EditMode.color:
+      running = self.color_update()
+
+    return running
+
+  def chars_update(self):
     running = True
     key = terminal.read()
 
@@ -68,6 +86,7 @@ class VidaBlue:
       if self.draw_mode == DrawingMode.char:
         current_tile = self.tiles[(self.cursor_x, self.cursor_y)]
         current_tile.ch = self.curr_char
+        current_tile.color = self.colors[self.color_index]
         self.tiles[(self.cursor_x, self.cursor_y)] = current_tile
       elif self.draw_mode == DrawingMode.line:
         if self.first_line_point_set:
@@ -79,6 +98,7 @@ class VidaBlue:
           for pt in pts:
             tile = self.tiles[pt]
             tile.ch = self.curr_char
+            tile.color = self.colors[self.color_index]
             self.tiles[pt] = tile
 
           self.first_line_point_set = False
@@ -108,13 +128,113 @@ class VidaBlue:
       self.other_char = self.curr_char
       self.curr_char = char_pressed
 
+    elif terminal.check(terminal.TK_ALT):
+      self.edit_mode = EditMode.color
+
+    elif terminal.check(terminal.TK_TAB):
+      self.edit_mode = EditMode.solidity
+
+    return running
+
+  def solidity_update(self):
+    running = True
+    key = terminal.read()
+
+    if key == terminal.TK_ESCAPE:
+      running = False
+
+    elif key == terminal.TK_UP:
+      if self.cursor_y - 1 >= 0:
+        self.cursor_y -= 1
+    elif key == terminal.TK_DOWN:
+      if self.cursor_y + 1 <= 31:
+        self.cursor_y += 1
+    elif key == terminal.TK_LEFT:
+      if self.cursor_x - 1 >= 0:
+        self.cursor_x -= 1
+    elif key == terminal.TK_RIGHT:
+      if self.cursor_x + 1 <= 31:
+        self.cursor_x += 1
+
+    elif key == terminal.TK_CONTROL:
+      if self.draw_mode == DrawingMode.char:
+        tile = self.tiles[(self.cursor_x, self.cursor_y)]
+        tile.solid = not tile.solid
+        self.tiles[(self.cursor_x, self.cursor_y)] = tile
+      elif self.draw_mode == DrawingMode.line:
+        if self.first_line_point_set:
+          self.line_end_x = self.cursor_x
+          self.line_end_y = self.cursor_y
+
+          pts = list(bresenham(self.line_start_x, self.line_start_y, self.line_end_x, self.line_end_y))
+
+          for pt in pts:
+            tile = self.tiles[pt]
+            tile.solid = not tile.solid
+            self.tiles[pt] = tile
+
+          self.first_line_point_set = False
+        else:
+          self.first_line_point_set = True
+          self.line_start_x = self.cursor_x
+          self.line_start_y = self.cursor_y
+
+    elif key == terminal.TK_LBRACKET:
+      if self.draw_mode == DrawingMode.char:
+        self.draw_mode = DrawingMode.line
+      elif self.draw_mode == DrawingMode.line:
+        self.draw_mode = DrawingMode.char
+    elif key == terminal.TK_RBRACKET:
+      if self.draw_mode == DrawingMode.char:
+        self.draw_mode = DrawingMode.line
+      elif self.draw_mode == DrawingMode.line:
+        self.draw_mode = DrawingMode.char
+
+    elif terminal.check(terminal.TK_TAB):
+      self.edit_mode = EditMode.chars
+
+    return running
+
+  def interact_update(self):
+    pass
+
+  def color_update(self):
+    key = terminal.read()
+    running = True
+
+    if key == terminal.TK_UP:
+      if self.color_index == 0:
+        self.color_index = len(self.colors) - 1
+      else:
+        self.color_index -= 1
+    elif key == terminal.TK_DOWN:
+      if self.color_index == len(self.colors) - 1:
+        self.color_index = 0
+      else:
+        self.color_index += 1
+    
+    if terminal.check(terminal.TK_ALT):
+      self.edit_mode = EditMode.chars
+
     return running
 
   def draw(self):
     terminal.clear()
 
+    if self.edit_mode == EditMode.chars:
+      self.chars_draw()
+    elif self.edit_mode == EditMode.solidity:
+      self.solidity_draw()
+    elif self.edit_mode == EditMode.interactable:
+      self.interact_draw()
+    elif self.edit_mode == EditMode.color:
+      self.color_draw()
+
+    terminal.refresh()
+
+  def chars_draw(self):
     for ((posx, posy), t) in self.tiles.items():
-      print_terminal(posx, posy, t.ch, 'white')
+      print_terminal(posx, posy, t.ch, t.color)
 
       current_tile_ch = self.tiles[(self.cursor_x, self.cursor_y)].ch
       print_terminal(self.cursor_x, self.cursor_y, '%s[+]%s' % (current_tile_ch, self.curr_char), 'white')
@@ -123,7 +243,7 @@ class VidaBlue:
       pts = list(bresenham(self.line_start_x, self.line_start_y, self.cursor_x, self.cursor_y))
 
       for pt in pts:
-        print_terminal(pt[0], pt[1], self.curr_char, 'white')
+        print_terminal(pt[0], pt[1], self.curr_char, self.colors[self.color_index])
 
     # Determine draw mode char
     draw_mode_char = ''
@@ -137,5 +257,40 @@ class VidaBlue:
     print_terminal(self.info_x_start, self.info_y_start + 1, 'hold: %s' % self.other_char, 'white')
     print_terminal(self.info_x_start, self.info_y_start + 2, 'cursor: (%s, %s)' % (self.cursor_x, self.cursor_y), 'white')
     print_terminal(self.info_x_start, self.info_y_start + 3, 'draw mode: [[%s]]' % (draw_mode_char), 'white')
-    print_terminal(self.info_x_start, self.info_y_start + 4, '%s' % self.tiles[(self.cursor_x, self.cursor_y)].ch, 'white')
-    terminal.refresh()
+    print_terminal(self.info_x_start, self.info_y_start + 4, 'color: %s' % self.colors[self.color_index], self.colors[self.color_index])
+
+  def solidity_draw(self):
+    for ((posx, posy), t) in self.tiles.items():
+      if t.solid:
+        print_terminal(posx, posy, t.ch, 'green')
+      else:
+        print_terminal(posx, posy, t.ch, 'white')
+
+    if self.first_line_point_set:
+      pts = list(bresenham(self.line_start_x, self.line_start_y, self.cursor_x, self.cursor_y))
+
+      for pt in pts:
+        print_terminal(pt[0], pt[1], self.curr_char, self.colors[self.color_index])
+
+    current_tile_ch = self.tiles[(self.cursor_x, self.cursor_y)].ch
+    print_terminal(self.cursor_x, self.cursor_y, '%s[+]%s' % (current_tile_ch, self.curr_char), 'white')
+
+    draw_mode_char = ''
+    if self.draw_mode == DrawingMode.char:
+      draw_mode_char = 'c'
+    elif self.draw_mode == DrawingMode.line:
+      draw_mode_char = '\\'
+    print_terminal(self.info_x_start, self.info_y_start, 'draw mode: [[%s]]' % (draw_mode_char), 'white')
+
+  def interact_draw(self):
+    pass
+
+  def color_draw(self):
+    y = 0
+    for c in self.colors:
+      if c == self.colors[self.color_index]:
+        print_terminal(0, y, c, 'blue')
+        y += 1
+      else:
+        print_terminal(0, y, c, 'white')
+        y += 1

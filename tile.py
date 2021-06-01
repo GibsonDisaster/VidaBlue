@@ -3,3 +3,4 @@ class Tile:
     self.ch = ch
     self.color = 'white'
     self.solid = False
+    self.interact = False

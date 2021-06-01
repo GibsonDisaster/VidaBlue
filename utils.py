@@ -24,6 +24,17 @@ def print_terminal(x, y, g, c):
 def create_properties_str(x, y, name, desc):
   return '%s,%s,%s,%s' % (x, y, name, desc)
 
+def get_property_pos(prop):
+  return (prop[0], prop[1])
+
+def get_property_name(prop):
+  return prop[2]
+
+def get_property_desc(prop):
+  return prop[3]
+
+# Code modified from code found here: https://stackoverflow.com/questions/28090960/read-file-as-a-list-of-tuples
+# Thank you to Vivek Sable!
 def read_properties_file(filepath):
   result = []
   with open(filepath, "r") as fp:

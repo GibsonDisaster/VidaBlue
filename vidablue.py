@@ -2,7 +2,7 @@ from bearlibterminal import terminal
 from bresenham import bresenham
 from textwrap import wrap
 from tile import Tile
-from utils import DrawingMode, EditMode, get_text_input, print_terminal
+from utils import DrawingMode, EditMode, get_property_desc, get_property_name, get_property_pos, print_terminal, create_properties_str, read_properties_file
 
 class VidaBlue:
   def __init__(self):
@@ -348,12 +348,29 @@ class VidaBlue:
         formatted_map_str = "\n".join(wrap(map_str, 32))
         f.write(formatted_map_str)
         f.close()
+
+        # Save map properties to file
+        f = open('out/%s_properties.txt' % map_name, 'w')
+        f.write('')
+        f.close()
+
+        f = open('out/%s_properties.txt' % map_name, 'a')
+        for y in range(32):
+          for x in range(32):
+            tile = self.tiles[(x, y)]
+            if tile.has_properties:
+              prop_str = create_properties_str(x, y, tile.name, tile.desc)
+              f.write(prop_str)
+              f.write('\n')
+
+        f.close()
       elif self.paused_index == 2: # Load map
         import easygui
 
         map_path = easygui.fileopenbox(title='map file')
         solid_path = easygui.fileopenbox(title='map solidity file')
         interact_path = easygui.fileopenbox(title='map interact file')
+        properties_path = easygui.fileopenbox(title='map properties file')
 
         # Load tiles with chars from map_path
         char_mapf = open(map_path, 'r').read()
@@ -405,6 +422,19 @@ class VidaBlue:
                 tile.interact = True
               self.tiles[(x, y)] = tile
               x += 1
+
+        # Load maps properties for tiles that have them
+        properties = read_properties_file(properties_path)
+
+        for prop in properties:
+          x, y = get_property_pos(prop)
+
+          tile = self.tiles[(x, y)]
+          tile.name = get_property_name(prop)
+          tile.desc = get_property_desc(prop)
+          tile.has_properties = True
+
+          self.tiles[(x, y)] = tile
 
       elif self.paused_index == 3: # Quit
         running = False

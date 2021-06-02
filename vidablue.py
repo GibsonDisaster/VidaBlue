@@ -42,6 +42,8 @@ class VidaBlue:
     self.should_paused_toast = False
     self.paused_toast = ''
 
+    self.using_mouse = False
+
   def update(self):
     running = True
 
@@ -71,15 +73,19 @@ class VidaBlue:
         self.edit_mode = EditMode.paused
 
     elif key == terminal.TK_UP:
+      self.using_mouse = False
       if self.cursor_y - 1 >= 0:
         self.cursor_y -= 1
     elif key == terminal.TK_DOWN:
+      self.using_mouse = False
       if self.cursor_y + 1 <= self.height - 1:
         self.cursor_y += 1
     elif key == terminal.TK_LEFT:
+      self.using_mouse = False
       if self.cursor_x - 1 >= 0:
         self.cursor_x -= 1
     elif key == terminal.TK_RIGHT:
+      self.using_mouse = False
       if self.cursor_x + 1 <= self.width - 1:
         self.cursor_x += 1
 
@@ -135,6 +141,35 @@ class VidaBlue:
     elif terminal.check(terminal.TK_TAB):
       self.edit_mode = EditMode.solidity
 
+    if terminal.state(terminal.TK_MOUSE_LEFT):
+      self.using_mouse = True
+      mx = terminal.state(terminal.TK_MOUSE_X)
+      my = terminal.state(terminal.TK_MOUSE_Y)
+
+      if self.draw_mode == DrawingMode.char:
+        current_tile = self.tiles[(mx, my)]
+        current_tile.ch = self.curr_char
+        current_tile.color = self.colors[self.color_index]
+        self.tiles[(mx, my)] = current_tile
+      elif self.draw_mode == DrawingMode.line:
+        if self.first_line_point_set:
+          self.line_end_x = mx
+          self.line_end_y = my
+
+          pts = list(bresenham(self.line_start_x, self.line_start_y, self.line_end_x, self.line_end_y))
+
+          for pt in pts:
+            tile = self.tiles[pt]
+            tile.ch = self.curr_char
+            tile.color = self.colors[self.color_index]
+            self.tiles[pt] = tile
+
+          self.first_line_point_set = False
+        else:
+          self.first_line_point_set = True
+          self.line_start_x = mx
+          self.line_start_y = my
+
     return running
 
   def solidity_update(self):
@@ -148,15 +183,19 @@ class VidaBlue:
         self.edit_mode = EditMode.paused
 
     elif key == terminal.TK_UP:
+      self.using_mouse = False
       if self.cursor_y - 1 >= 0:
         self.cursor_y -= 1
     elif key == terminal.TK_DOWN:
+      self.using_mouse = False
       if self.cursor_y + 1 <= self.height - 1:
         self.cursor_y += 1
     elif key == terminal.TK_LEFT:
+      self.using_mouse = False
       if self.cursor_x - 1 >= 0:
         self.cursor_x -= 1
     elif key == terminal.TK_RIGHT:
+      self.using_mouse = False
       if self.cursor_x + 1 <= self.width - 1:
         self.cursor_x += 1
 
@@ -182,6 +221,33 @@ class VidaBlue:
           self.first_line_point_set = True
           self.line_start_x = self.cursor_x
           self.line_start_y = self.cursor_y
+
+    elif terminal.state(terminal.TK_MOUSE_LEFT):
+      self.using_mouse = True
+      mx = terminal.state(terminal.TK_MOUSE_X)
+      my = terminal.state(terminal.TK_MOUSE_Y)
+
+      if self.draw_mode == DrawingMode.char:
+        tile = self.tiles[(mx, my)]
+        tile.solid = not tile.solid
+        self.tiles[(mx, my)] = tile
+      elif self.draw_mode == DrawingMode.line:
+        if self.first_line_point_set:
+          self.line_end_x = mx
+          self.line_end_y = my
+
+          pts = list(bresenham(self.line_start_x, self.line_start_y, self.line_end_x, self.line_end_y))
+
+          for pt in pts:
+            tile = self.tiles[pt]
+            tile.solid = not tile.solid
+            self.tiles[pt] = tile
+
+          self.first_line_point_set = False
+        else:
+          self.first_line_point_set = True
+          self.line_start_x = mx
+          self.line_start_y = mx
 
     elif key == terminal.TK_LBRACKET:
       if self.draw_mode == DrawingMode.char:
@@ -245,6 +311,33 @@ class VidaBlue:
           self.line_start_x = self.cursor_x
           self.line_start_y = self.cursor_y
 
+    elif terminal.state(terminal.TK_MOUSE_LEFT):
+      self.using_mouse = True
+      mx = terminal.state(terminal.TK_MOUSE_X)
+      my = terminal.state(terminal.TK_MOUSE_Y)
+
+      if self.draw_mode == DrawingMode.char:
+        tile = self.tiles[(mx, my)]
+        tile.interact = not tile.interact
+        self.tiles[(mx, my)] = tile
+      elif self.draw_mode == DrawingMode.line:
+        if self.first_line_point_set:
+          self.line_end_x = mx
+          self.line_end_y = my
+
+          pts = list(bresenham(self.line_start_x, self.line_start_y, self.line_end_x, self.line_end_y))
+
+          for pt in pts:
+            tile = self.tiles[pt]
+            tile.interact = not tile.interact
+            self.tiles[pt] = tile
+
+          self.first_line_point_set = False
+        else:
+          self.first_line_point_set = True
+          self.line_start_x = mx
+          self.line_start_y = my
+
     elif key == terminal.TK_LBRACKET:
       if self.draw_mode == DrawingMode.char:
         self.draw_mode = DrawingMode.line
@@ -291,12 +384,12 @@ class VidaBlue:
       else:
         self.paused_index -= 1
     elif key == terminal.TK_DOWN:
-      if self.paused_index == 4:
+      if self.paused_index == 3:
         self.paused_index = 0
       else:
         self.paused_index += 1
 
-    elif terminal.check(terminal.TK_CONTROL):
+    elif terminal.check(terminal.TK_SPACE):
       if self.paused_index == 0: # Return to map
         self.edit_mode = EditMode.chars
         self.should_paused_toast = False
@@ -311,8 +404,6 @@ class VidaBlue:
         formatted_map_str = "\n".join(wrap(map_str, self.width))
         f.write(formatted_map_str)
         f.close()
-
-        print(map_str)
 
         # Save tile solidity to file
         f = open('out/%s_solidity.txt' % self.map_name, 'w+')
@@ -495,6 +586,29 @@ class VidaBlue:
 
         self.tiles[(self.cursor_x, self.cursor_y)] = tile
 
+    elif terminal.state(terminal.TK_MOUSE_LEFT):
+      self.using_mouse = True
+      mx = terminal.state(terminal.TK_MOUSE_X)
+      my = terminal.state(terminal.TK_MOUSE_Y)
+
+      import easygui
+
+      tile = self.tiles[(mx, my)]
+
+      if not tile.has_properties:
+        name_and_desc = easygui.textbox("Enter Name and then on next line enter the description", "Vida Blue", [])
+      else:
+        name_and_desc = easygui.textbox("Enter Name and then on next line enter the description", "Vida Blue", [tile.name, '\n', tile.desc])
+
+      if name_and_desc != None:
+        name, _, desc = name_and_desc.rpartition('\n')
+
+        tile.name = name
+        tile.desc = desc
+        tile.has_properties = True
+
+        self.tiles[(mx, my)] = tile
+
     elif terminal.check(terminal.TK_TAB):
       self.edit_mode = EditMode.chars
 
@@ -522,11 +636,18 @@ class VidaBlue:
     for ((posx, posy), t) in self.tiles.items():
       print_terminal(posx, posy, t.ch, t.color)
 
-      current_tile_ch = self.tiles[(self.cursor_x, self.cursor_y)].ch
-      print_terminal(self.cursor_x, self.cursor_y, '%s[+]%s' % (current_tile_ch, self.curr_char), 'white')
+      if not self.using_mouse:
+        current_tile_ch = self.tiles[(self.cursor_x, self.cursor_y)].ch
+        print_terminal(self.cursor_x, self.cursor_y, '%s[+]%s' % (current_tile_ch, self.curr_char), 'white')
 
     if self.first_line_point_set:
-      pts = list(bresenham(self.line_start_x, self.line_start_y, self.cursor_x, self.cursor_y))
+      mx = terminal.state(terminal.TK_MOUSE_X)
+      my = terminal.state(terminal.TK_MOUSE_Y)
+      
+      if self.using_mouse:
+        pts = list(bresenham(self.line_start_x, self.line_start_y, mx, my))
+      else:
+        pts = list(bresenham(self.line_start_x, self.line_start_y, self.cursor_x, self.cursor_y))
 
       for pt in pts:
         print_terminal(pt[0], pt[1], self.curr_char, self.colors[self.color_index])
@@ -616,9 +737,9 @@ class VidaBlue:
 
     for y, option in enumerate(options):
       if y == self.paused_index:
-        print_terminal(0, y + 1, option, 'blue')
+        print_terminal(0, y + 2, option, 'blue')
       else:
-        print_terminal(0, y + 1, option, 'white')
+        print_terminal(0, y + 2, option, 'white')
 
     if self.should_paused_toast:
       print_terminal(0, self.height - 1, self.paused_toast, 'yellow')

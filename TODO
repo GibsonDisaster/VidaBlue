@@ -1,3 +1,6 @@
 why is the top left char always wrong? (Seems to have been fixed? Kanskje?)
 
 copy and paste tool for properties
+mouse mode drawing wrong for solidity, properties, and interact modes
+
+refactor to make clicking the mouse move the programs cursor_x, cursor_y positions

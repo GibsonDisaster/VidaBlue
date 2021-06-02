@@ -5,10 +5,11 @@ from tile import Tile
 from utils import DrawingMode, EditMode, get_property_desc, get_property_name, get_property_pos, print_terminal, create_properties_str, read_properties_file
 
 class VidaBlue:
-  def __init__(self, width=32, height=32):
+  def __init__(self, width, height, map_name):
     self.tiles = {}
     self.width = width
     self.height = height
+    self.map_name = map_name
     for x in range(self.width):
       for y in range(self.height):
         self.tiles[(x, y)] = Tile('.')
@@ -301,22 +302,8 @@ class VidaBlue:
         self.should_paused_toast = False
         self.paused_toast = ''
       elif self.paused_index == 1: # Save map
-        # Code to open window to input map name
-        import easygui
-  
-        # message to be displayed
-        message = "Please name file without whitespace"
-          
-        # window title
-        title = "Save map as..."
-          
-        # long text
-        text = [""]
-
-        map_name = easygui.textbox(message, title, text)
-
         # Save tile chars to file
-        f = open('out/%s_map.txt' % map_name, 'w+')
+        f = open('out/%s_map.txt' % self.map_name, 'w+')
         map_str = ""
         for y in range(self.height):
           for x in range(self.width):
@@ -328,7 +315,7 @@ class VidaBlue:
         print(map_str)
 
         # Save tile solidity to file
-        f = open('out/%s_solidity.txt' % map_name, 'w+')
+        f = open('out/%s_solidity.txt' % self.map_name, 'w+')
         map_str = ""
         for y in range(self.height):
           for x in range(self.width):
@@ -342,7 +329,7 @@ class VidaBlue:
         f.close()
 
         # Save tile interactability to file
-        f = open('out/%s_interact.txt' % map_name, 'w+')
+        f = open('out/%s_interact.txt' % self.map_name, 'w+')
         map_str = ""
         for y in range(self.height):
           for x in range(self.width):
@@ -356,11 +343,11 @@ class VidaBlue:
         f.close()
 
         # Save map properties to file
-        f = open('out/%s_properties.txt' % map_name, 'w')
+        f = open('out/%s_properties.txt' % self.map_name, 'w')
         f.write('')
         f.close()
 
-        f = open('out/%s_properties.txt' % map_name, 'a')
+        f = open('out/%s_properties.txt' % self.map_name, 'a')
         for y in range(self.height):
           for x in range(self.width):
             tile = self.tiles[(x, y)]

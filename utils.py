@@ -1,4 +1,5 @@
 from enum import Enum
+from tile import Tile
 from bearlibterminal import terminal
 
 class DrawingMode(Enum):
@@ -20,6 +21,14 @@ def print_terminal(x, y, g, c):
   terminal.color(c)
   terminal.printf(x, y, g)
   terminal.color(old_color)
+
+def make_map(width, height):
+  tiles = {}
+  for x in range(width):
+    for y in range(height):
+      tiles[(x, y)] = Tile('.')
+
+  return tiles
 
 def create_properties_str(x, y, name, desc):
   return '%s,%s,%s,%s' % (x, y, name, desc)

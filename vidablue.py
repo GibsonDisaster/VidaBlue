@@ -2,17 +2,29 @@ from bearlibterminal import terminal
 from bresenham import bresenham
 from textwrap import wrap
 from tile import Tile
-from utils import DrawingMode, EditMode, get_property_desc, get_property_name, get_property_pos, print_terminal, create_properties_str, read_properties_file
+from utils import DrawingMode, EditMode, get_property_desc, get_property_name, get_property_pos, make_map, print_terminal, create_properties_str, read_properties_file
 
 class VidaBlue:
   def __init__(self, width, height, map_name):
     self.tiles = {}
+    self.maps = {}
+
+    self.overview_map = {}
+    self.overview_pos = (0,0)
+
     self.width = width
     self.height = height
     self.map_name = map_name
-    for x in range(self.width):
-      for y in range(self.height):
-        self.tiles[(x, y)] = Tile('.')
+    
+    for x in range(8):
+      for y in range(8):
+        self.overview_map[(x, y)] = '*'
+
+    for mx in range(8):
+      for my in range(8):
+        self.maps[(mx, my)] = make_map(self.width, self.height)
+
+    self.tiles = self.maps[self.overview_pos]
 
     self.draw_mode = DrawingMode.char
     self.edit_mode = EditMode.chars
@@ -71,6 +83,31 @@ class VidaBlue:
         self.first_line_point_set = False
       else:
         self.edit_mode = EditMode.paused
+
+    elif key == terminal.TK_KP_8:
+      new_pos = (self.overview_pos[0], self.overview_pos[1] - 1)
+      if new_pos in self.maps:
+        self.maps[self.overview_pos] = self.tiles
+        self.tiles = self.maps[new_pos]
+        self.overview_pos = new_pos
+    elif key == terminal.TK_KP_2:
+      new_pos = (self.overview_pos[0], self.overview_pos[1] + 1)
+      if new_pos in self.maps:
+        self.maps[self.overview_pos] = self.tiles
+        self.tiles = self.maps[new_pos]
+        self.overview_pos = new_pos
+    elif key == terminal.TK_KP_4:
+      new_pos = (self.overview_pos[0] - 1, self.overview_pos[1])
+      if new_pos in self.maps:
+        self.maps[self.overview_pos] = self.tiles
+        self.tiles = self.maps[new_pos]
+        self.overview_pos = new_pos
+    elif key == terminal.TK_KP_6:
+      new_pos = (self.overview_pos[0] + 1, self.overview_pos[1])
+      if new_pos in self.maps:
+        self.maps[self.overview_pos] = self.tiles
+        self.tiles = self.maps[new_pos]
+        self.overview_pos = new_pos
 
     elif key == terminal.TK_UP:
       self.using_mouse = False
@@ -182,6 +219,31 @@ class VidaBlue:
       else:
         self.edit_mode = EditMode.paused
 
+    elif key == terminal.TK_KP_8:
+      new_pos = (self.overview_pos[0], self.overview_pos[1] - 1)
+      if new_pos in self.maps:
+        self.maps[self.overview_pos] = self.tiles
+        self.tiles = self.maps[new_pos]
+        self.overview_pos = new_pos
+    elif key == terminal.TK_KP_2:
+      new_pos = (self.overview_pos[0], self.overview_pos[1] + 1)
+      if new_pos in self.maps:
+        self.maps[self.overview_pos] = self.tiles
+        self.tiles = self.maps[new_pos]
+        self.overview_pos = new_pos
+    elif key == terminal.TK_KP_4:
+      new_pos = (self.overview_pos[0] - 1, self.overview_pos[1])
+      if new_pos in self.maps:
+        self.maps[self.overview_pos] = self.tiles
+        self.tiles = self.maps[new_pos]
+        self.overview_pos = new_pos
+    elif key == terminal.TK_KP_6:
+      new_pos = (self.overview_pos[0] + 1, self.overview_pos[1])
+      if new_pos in self.maps:
+        self.maps[self.overview_pos] = self.tiles
+        self.tiles = self.maps[new_pos]
+        self.overview_pos = new_pos
+
     elif key == terminal.TK_UP:
       self.using_mouse = False
       if self.cursor_y - 1 >= 0:
@@ -274,6 +336,31 @@ class VidaBlue:
         self.first_line_point_set = False
       else:
         self.edit_mode = EditMode.paused
+
+    elif key == terminal.TK_KP_8:
+      new_pos = (self.overview_pos[0], self.overview_pos[1] - 1)
+      if new_pos in self.maps:
+        self.maps[self.overview_pos] = self.tiles
+        self.tiles = self.maps[new_pos]
+        self.overview_pos = new_pos
+    elif key == terminal.TK_KP_2:
+      new_pos = (self.overview_pos[0], self.overview_pos[1] + 1)
+      if new_pos in self.maps:
+        self.maps[self.overview_pos] = self.tiles
+        self.tiles = self.maps[new_pos]
+        self.overview_pos = new_pos
+    elif key == terminal.TK_KP_4:
+      new_pos = (self.overview_pos[0] - 1, self.overview_pos[1])
+      if new_pos in self.maps:
+        self.maps[self.overview_pos] = self.tiles
+        self.tiles = self.maps[new_pos]
+        self.overview_pos = new_pos
+    elif key == terminal.TK_KP_6:
+      new_pos = (self.overview_pos[0] + 1, self.overview_pos[1])
+      if new_pos in self.maps:
+        self.maps[self.overview_pos] = self.tiles
+        self.tiles = self.maps[new_pos]
+        self.overview_pos = new_pos
 
     elif key == terminal.TK_UP:
       if self.cursor_y - 1 >= 0:
@@ -396,7 +483,7 @@ class VidaBlue:
         self.paused_toast = ''
       elif self.paused_index == 1: # Save map
         # Save tile chars to file
-        f = open('out/%s_map.txt' % self.map_name, 'w+')
+        f = open('out/%s_%sx%s_map.txt' % (self.map_name, self.overview_pos[0], self.overview_pos[1]), 'w+')
         map_str = ""
         for y in range(self.height):
           for x in range(self.width):
@@ -406,7 +493,7 @@ class VidaBlue:
         f.close()
 
         # Save tile solidity to file
-        f = open('out/%s_solidity.txt' % self.map_name, 'w+')
+        f = open('out/%s_%sx%s_solidity.txt' % (self.map_name, self.overview_pos[0], self.overview_pos[1]), 'w+')
         map_str = ""
         for y in range(self.height):
           for x in range(self.width):
@@ -420,7 +507,7 @@ class VidaBlue:
         f.close()
 
         # Save tile interactability to file
-        f = open('out/%s_interact.txt' % self.map_name, 'w+')
+        f = open('out/%s_%sx%s_interact.txt' % (self.map_name, self.overview_pos[0], self.overview_pos[1]), 'w+')
         map_str = ""
         for y in range(self.height):
           for x in range(self.width):
@@ -434,11 +521,11 @@ class VidaBlue:
         f.close()
 
         # Save map properties to file
-        f = open('out/%s_properties.txt' % self.map_name, 'w')
+        f = open('out/%s_%sx%s_properties.txt' % (self.map_name, self.overview_pos[0], self.overview_pos[1]), 'w')
         f.write('')
         f.close()
 
-        f = open('out/%s_properties.txt' % self.map_name, 'a')
+        f = open('out/%s_%sx%s_properties.txt' % (self.map_name, self.overview_pos[0], self.overview_pos[1]), 'a')
         for y in range(self.height):
           for x in range(self.width):
             tile = self.tiles[(x, y)]
@@ -554,6 +641,31 @@ class VidaBlue:
     if key == terminal.TK_ESCAPE:
       self.edit_mode = EditMode.paused
 
+    elif key == terminal.TK_KP_8:
+      new_pos = (self.overview_pos[0], self.overview_pos[1] - 1)
+      if new_pos in self.maps:
+        self.maps[self.overview_pos] = self.tiles
+        self.tiles = self.maps[new_pos]
+        self.overview_pos = new_pos
+    elif key == terminal.TK_KP_2:
+      new_pos = (self.overview_pos[0], self.overview_pos[1] + 1)
+      if new_pos in self.maps:
+        self.maps[self.overview_pos] = self.tiles
+        self.tiles = self.maps[new_pos]
+        self.overview_pos = new_pos
+    elif key == terminal.TK_KP_4:
+      new_pos = (self.overview_pos[0] - 1, self.overview_pos[1])
+      if new_pos in self.maps:
+        self.maps[self.overview_pos] = self.tiles
+        self.tiles = self.maps[new_pos]
+        self.overview_pos = new_pos
+    elif key == terminal.TK_KP_6:
+      new_pos = (self.overview_pos[0] + 1, self.overview_pos[1])
+      if new_pos in self.maps:
+        self.maps[self.overview_pos] = self.tiles
+        self.tiles = self.maps[new_pos]
+        self.overview_pos = new_pos
+
     elif key == terminal.TK_UP:
       if self.cursor_y - 1 >= 0:
         self.cursor_y -= 1
@@ -619,16 +731,20 @@ class VidaBlue:
 
     if self.edit_mode == EditMode.chars:
       self.chars_draw()
+      self.draw_sidescreen()
     elif self.edit_mode == EditMode.solidity:
       self.solidity_draw()
+      self.draw_sidescreen()
     elif self.edit_mode == EditMode.interactable:
       self.interact_draw()
+      self.draw_sidescreen()
     elif self.edit_mode == EditMode.color:
       self.color_draw()
     elif self.edit_mode == EditMode.paused:
       self.paused_draw()
     elif self.edit_mode == EditMode.properties:
       self.properties_draw()
+      self.draw_sidescreen()
 
     terminal.refresh()
 
@@ -762,3 +878,12 @@ class VidaBlue:
 
     for (offset, line) in enumerate(list(wrap(current_tile.desc, 25))):
       print_terminal(self.info_x_start, self.info_y_start + offset + 3, line, 'white')
+
+  def draw_sidescreen(self):
+    for ((x, y), val) in self.overview_map.items():
+      char = val
+
+      if (x, y) == self.overview_pos:
+        char = '@'
+
+      print_terminal(self.info_x_start + 8 + x, 15 + y, char, 'white')

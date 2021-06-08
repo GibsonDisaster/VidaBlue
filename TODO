@@ -3,4 +3,15 @@ why is the top left char always wrong? (Seems to have been fixed? Kanskje?)
 copy and paste tool for properties
 mouse mode drawing wrong for solidity, properties, and interact modes
 
+crash when mouse clicks on info window
+
 refactor to make clicking the mouse move the programs cursor_x, cursor_y positions
+
+save as prefab option that only includes tiles that aren't "default" in at least one aspect
+  - crop screen to edited tiles and save that to a prefab file
+
+change it so theres just one .vida file?
+
+way to edit bg color
+
+ADD WAY TO LOAD MULTIPLE MAPS AT ONCE INTO THE PROGRAM
